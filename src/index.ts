@@ -11,31 +11,32 @@ import { errorHandler } from './middleware/errorHandler';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Security middleware
 app.use(helmet());
 app.use(morgan('combined'));
 
-// CORS configuration for Electron app
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:8080', 'http://localhost:5173'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || origin === "null") return callback(null, true);
+      if (["http://localhost:3000", "http://localhost:5173"].includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
+// app.use(cors({ origin: true, credentials: true }));
 
-// Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
 app.use('/auth', authRoutes);
 app.use('/students', studentRoutes);
 app.use('/analytics', analyticsRoutes);
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Error handling middleware
 app.use(errorHandler);
 
 // Initialize database and start server
